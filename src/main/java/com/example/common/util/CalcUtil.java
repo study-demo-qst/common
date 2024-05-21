@@ -1,4 +1,4 @@
-package com.example.common;
+package com.example.common.util;
 
 /**
  * This utility class provides calculation related methods.

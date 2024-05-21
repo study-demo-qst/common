@@ -1,4 +1,4 @@
-package com.example.common;
+package com.example.common.util;
 
 import java.util.Random;
 import java.util.stream.Collectors;
