@@ -7,7 +7,7 @@ Accessible from repositories in the 'coding-sample' organization
 
 # templateプロジェクトの使い方
 1. Webからリポジトリ新規作成。templateを指定
-1. pom.xmlのmaven_commonを変更（3か所）
+1. pom.xmlのcommonを変更（3か所）
     1. organizationの場合は、distributionManagementの宛先も修正
         https://maven.pkg.github.com/zuruorg3/comm1
 1. settingsは引き継がれないので設定

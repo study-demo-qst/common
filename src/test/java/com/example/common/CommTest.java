@@ -1,10 +1,10 @@
-package com.example.maven_common;
+package com.example.common;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import com.example.maven_common.Comm;
+import com.example.common.Comm;
 
 public class CommTest {
     @Test

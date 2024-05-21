@@ -1,8 +1,7 @@
-package com.example.maven_common;
+package com.example.common;
 
 public class Comm {
     public String getComm() {
         return "Comm";
     }
 }
-

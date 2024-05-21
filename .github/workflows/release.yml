@@ -11,20 +11,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  trigger_maven_common_build:
+  trigger_common_build:
     runs-on: ubuntu-latest
     permissions:
       contents: none
       packages: none
     steps:
-    - name: Trigger maven_logic build
+    - name: Trigger logic build
       if: success()  # Only run this step if the build was successful
       run: |
         curl -X POST \
             -H "Authorization: token ${{ secrets.PKG_READ_ETERNAL }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/coding-sample/maven_logic/dispatches \
-            -d '{"event_type": "maven_common_build_success", "client_payload": {"tag": "${{ github.ref_name }}"} }'
+            https://api.github.com/repos/coding-sample/logic/dispatches \
+            -d '{"event_type": "common_build_success", "client_payload": {"tag": "${{ github.ref_name }}"} }'
 
 
   # check_master_branch:
@@ -222,7 +222,7 @@ jobs:
 #           -H "Accept: application/vnd.github+json" \
 #           -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
 #           -H "X-GitHub-Api-Version: 2022-11-28" \
-#           https://api.github.com/orgs/coding-sample/packages/maven/releases.com.example.maven_common/versions)
+#           https://api.github.com/orgs/coding-sample/packages/maven/releases.com.example.common/versions)
 #         echo "before ---"
 #         echo "${res}"
 #         echo "----------"
