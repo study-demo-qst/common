@@ -1,0 +1,35 @@
+name: Conditional Jobs on Repository Dispatch
+
+on:
+  repository_dispatch:
+    types: [tag-branch-event]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    if: github.event.action == 'tag-branch-event'
+    steps:
+      - name: View parameters
+        run: |
+          echo "Branch: ${{ github.event.client_payload.branch }}"
+          echo "tag_name: ${{ github.event.client_payload.tag_name }}"
+          echo "client_payload: ${{ github.event.client_payload }}"
+
+      - name: Checkout the repo for the branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.branch }}
+
+      - name: Set up Git
+        run: |
+          # git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Tag the branch
+        run: |
+          TAG_NAME=${{ github.event.client_payload.tag_name }}
+          git tag -d $TAG_NAME 2>/dev/null || true
+          git push origin --delete $TAG_NAME 2>/dev/null || true
+          git tag $TAG_NAME
+          git push origin $TAG_NAME

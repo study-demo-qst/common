@@ -1,0 +1,40 @@
+name: tag build
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: none
+
+    steps:
+      # Set Up前にcheckout必要
+    - uses: actions/checkout@v3
+
+    - name: Set Up
+      id: setup
+      uses: ./.github/workflows
+
+    - name: Build with Maven
+      run: |
+        echo "########### build_time=${{ steps.setup.outputs.build_time_tag }}"
+        mvn --settings ./settings.xml clean install -Dbuild_time=${{ steps.setup.outputs.build_time_tag }}
+
+  trigger_maven_common_build:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      packages: none
+    steps:
+    - name: Trigger maven_logic build
+      if: success()  # Only run this step if the build was successful
+      run: |
+        curl -X POST \
+            -H "Authorization: token ${{ secrets.PKG_READ_ETERNAL }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/coding-sample/maven_logic/dispatches \
+            -d '{"event_type": "maven_logic,maven_web", "client_payload": {"tag": "${{ github.ref_name }}"} }'

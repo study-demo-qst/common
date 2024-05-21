@@ -1,0 +1,344 @@
+name: release build
+
+on: 
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '.github/workflows/build.yml'
+      - '.github/workflows/tag.yml'
+      - '.github/workflows/build_chain.yml'
+  workflow_dispatch:
+
+jobs:
+  trigger_maven_common_build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      packages: none
+    steps:
+    - name: Trigger maven_logic build
+      if: success()  # Only run this step if the build was successful
+      run: |
+        curl -X POST \
+            -H "Authorization: token ${{ secrets.PKG_READ_ETERNAL }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/coding-sample/maven_logic/dispatches \
+            -d '{"event_type": "maven_common_build_success", "client_payload": {"tag": "${{ github.ref_name }}"} }'
+
+
+  # check_master_branch:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: none
+  #   steps:
+  #     # Set Up前にcheckout必要
+  #   - uses: actions/checkout@v3
+
+  #   - name: Set Up
+  #     id: setup
+  #     uses: ./.github/workflows
+
+  #   - name: Ensure the tag is on the master branch
+  #     run: |
+  #       TAG_COMMIT=$(git rev-list -n 1 ${{ github.ref }})
+  #       echo "Tag commit: ${TAG_COMMIT}"
+  #       echo "github.ref: ${{ github.ref }}"
+        
+  #       # Check if the tagged commit is part of the master branch
+  #       if ! git branch --contains "$TAG_COMMIT" | grep -q '^* master$'; then
+  #         echo "masterブランチ以外のコミットへのタグではビルドされません"
+  #         exit 1
+  #       fi
+
+
+#   build:
+#     needs: check_master_branch
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: none
+
+#     steps:
+#     - name: Token確認
+#       env:
+#         TOKEN: ${{ secrets.APP_ID }}
+#       run: |
+#         echo "app_id1: ${TOKEN}"
+#         echo "app_id2: ${4:TOKEN}"
+#         echo "app_id2: ${TOKEN:0:4}"
+#         echo "app_id2: ${#TOKEN}"
+
+#     - name: Token確認2
+#       env:
+#         TOKEN: ${{ secrets.PRIVATE_KEY }}
+#       run: |
+#         echo "app_id1: ${TOKEN}"
+#         echo "app_id2: ${TOKEN:4}"
+#         echo "app_id2: ${TOKEN:0:4}"
+#         echo "app_id2: ${#TOKEN}"
+
+#       # Set Up前にcheckout必要
+#     - uses: actions/checkout@v3
+
+#     - name: Set Up
+#       id: setup
+#       uses: ./.github/workflows
+
+#     - name: Build with Maven
+#       run: mvn --settings ./settings.xml clean install -Dbuild_time=${{ steps.setup.outputs.build_time }}
+
+#     - name: Upload src
+#       uses: actions/upload-artifact@v3
+#       with:
+#         name: src
+#         path: .
+
+#   test:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: none
+
+#     steps:
+#     # Set Up前にsrc必要
+#     - uses: actions/checkout@v4
+    
+#     - name: Set Up
+#       id: setup
+#       uses: ./.github/workflows
+
+#     - name: Test
+#       run: mvn --settings ./settings.xml test -Dbuild_time=${{ steps.setup.outputs.build_time }}
+
+# # ...（既存の部分は省略）
+
+#   register-dummy-package:
+#     # workflowからは最後のパッケージを削除出来ないため、初回のみダミーパッケージを登録する
+#     needs: test
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: write
+
+#     steps:
+#     - name: Token発行（Github App）
+#       id: generate_token
+#       uses: tibdex/github-app-token@v1.8
+#       with:
+#         app_id: ${{ secrets.APP_ID }}
+#         private_key: ${{ secrets.PRIVATE_KEY }}
+
+#     # Set Up前にcheckout必要
+#     - uses: actions/checkout@v4
+    
+#     - name: Set Up
+#       id: setup
+#       uses: ./.github/workflows
+
+#     - name: Check number of packages
+#       id: checkpkg
+#       run: |
+#         res=$(curl -L \
+#           -H "Accept: application/vnd.github+json" \
+#           -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
+#           -H "X-GitHub-Api-Version: 2022-11-28" \
+#           https://api.github.com/orgs/coding-sample/packages/maven/${{ steps.setup.outputs.pkg }}/versions)
+        
+#         echo "Packages ---"
+#         echo $res
+#         echo "------------"
+
+#         if [[ "${res}" != *"message"* ]]; then
+#           # レスポンスが配列の場合（エラーメッセージがない場合）
+#           count=$(echo "${res}" | jq length)
+#         else
+#           # エラーメッセージの場合は、パッケージが0件とみなす
+#           count=0
+#         fi
+
+#         echo "Package count: ${count}"
+
+#         if [ "$count" -eq 0 ]; then
+#             echo "register_dummy=true" >> $GITHUB_OUTPUT
+#         else
+#             echo "register_dummy=false" >> $GITHUB_OUTPUT
+#         fi
+#       shell: bash
+
+#     - name: Register dummy package
+#       if: ${{ steps.checkpkg.outputs.register_dummy == 'true' }}
+#       run: |
+#         # ダミーパッケージ登録
+#         mvn --settings ./settings.xml deploy -Dbuild_time=DUMMY
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#   # ...（既存の部分は省略）
+
+
+#   delete-same-package:
+#     needs: register-dummy-package
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: none
+
+#     steps:
+#     - name: Token発行（Github App）
+#       id: generate_token
+#       uses: tibdex/github-app-token@v1.8
+#       with:
+#         app_id: ${{ secrets.APP_ID }}
+#         private_key: ${{ secrets.PRIVATE_KEY }}
+
+#     - name: Token確認
+#       env:
+#         TOKEN: ${{ steps.generate_token.outputs.token }}
+#       run: |
+#         echo "Access Token: ghs_"
+#         echo "Access Token: ${TOKEN:4}"
+
+#     # build_time取得に必要
+#     - uses: actions/checkout@v4
+      
+#     # build_time取得に必要
+#     - name: Set Up
+#       id: setup
+#       uses: ./.github/workflows
+
+#     - name: debug
+#       run: |
+#         echo "${{ github.repository }}"
+#         echo "----------"
+
+#     - name: build timeの一致するパッケージID取得
+#       id: pkgcheck
+#       run: |
+#         # packageのバージョンIDを取得
+#         res=$(curl -L \
+#           -H "Accept: application/vnd.github+json" \
+#           -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
+#           -H "X-GitHub-Api-Version: 2022-11-28" \
+#           https://api.github.com/orgs/coding-sample/packages/maven/releases.com.example.maven_common/versions)
+#         echo "before ---"
+#         echo "${res}"
+#         echo "----------"
+
+#         if [[ "${res}" != *"message"* ]]; then
+#           id=$(echo "${res}" | jq '.[] | select(.name == "${{ steps.setup.outputs.build_time }}") | .id')
+#           if [ -n "$id" ]; then
+#             echo "ID of package with name '${{ steps.setup.outputs.build_time }}' is: ${id}"
+#             echo "id=${id}" >> $GITHUB_OUTPUT
+#           else
+#             echo "Package not found, skipping deletion."
+#             echo "id=skip" >> $GITHUB_OUTPUT
+#           fi
+#         else
+#           echo "API response suggests package not found."
+#           echo "id=skip" >> $GITHUB_OUTPUT
+#         fi
+#       shell: bash
+
+#     - name: Delete package
+#       if: ${{ steps.pkgcheck.outputs.id != 'skip' }}
+#       uses: actions/delete-package-versions@v4
+#       with: 
+#         package-name: ${{ steps.setup.outputs.pkg }}
+#         package-type: 'maven'
+#         package-version-ids: ${{ steps.pkgcheck.outputs.id }}
+#         token: ${{ steps.generate_token.outputs.token }}
+
+#   deploy:
+#     needs: delete-same-package
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: write
+
+#     steps:
+#     # Set Up前にsrc必要
+#     - uses: actions/checkout@v4
+    
+#     - name: Set Up
+#       id: setup
+#       uses: ./.github/workflows
+
+#     - name: Deploy to GitHub Packages
+#       run: mvn --settings ./settings.xml deploy -Dbuild_time=${{ steps.setup.outputs.build_time }}
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#     - name: Upload build artifact
+#       uses: actions/upload-artifact@v3
+#       with:
+#         name: jar
+#         path: target/*.jar
+
+#   delete-old-packages:
+#     needs: deploy
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: none
+
+
+#     steps:
+#     - name: Token発行（Github App）
+#       id: generate_token
+#       uses: tibdex/github-app-token@v1.8
+#       with:
+#         app_id: ${{ secrets.APP_ID }}
+#         private_key: ${{ secrets.PRIVATE_KEY }}
+
+#     # Set Up前にcheckout必要
+#     - uses: actions/checkout@v4
+    
+#     - name: Set Up
+#       id: setup
+#       uses: ./.github/workflows
+
+#     - name: Get package versions created within the last period
+#       id: pkgids
+#       run: |
+#         # Get the date of the period ago (e.g., 3 months ago)
+#         # period_ago=$(date -d '${{ vars.PACKAGE_RETENTION_PERIOD }} months ago' '+%Y-%m-%dT%H:%M:%SZ')
+#         period_ago=$(date -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+#         # period_ago=$(date -d '180 seconds ago' '+%Y-%m-%dT%H:%M:%SZ')
+
+#         # Print the package name and period_ago for debugging
+#         echo "Package: ${{ steps.setup.outputs.pkg }}, Period Ago: $period_ago"
+        
+#         # Fetch package versions
+#         res=$(curl -L \
+#           -H "Accept: application/vnd.github+json" \
+#           -H "Authorization: Bearer ${{ steps.generate_token.outputs.token }}" \
+#           -H "X-GitHub-Api-Version: 2022-11-28" \
+#           https://api.github.com/orgs/coding-sample/packages/maven/${{ steps.setup.outputs.pkg }}/versions)
+        
+#         echo "Packages ---"
+#         echo "${res}"
+#         echo "------------"
+
+#         # Extract IDs of packages created within the last period
+#         ids=$(echo "${res}" | jq -r --arg DATE "$period_ago" '.[] | select(.updated_at <= $DATE) | .id | tostring' | paste -sd, -)
+
+#         if [ -n "$ids" ]; then
+#           echo "IDs of packages updated within the last period: ${ids}"
+#           echo "ids=${ids}" >> $GITHUB_OUTPUT
+#         else
+#           echo "No packages found within the last period, skipping deletion."
+#           echo "ids=skip" >> $GITHUB_OUTPUT
+#         fi
+#       shell: bash
+
+#     - name: Delete package
+#       if: ${{ steps.pkgids.outputs.ids != 'skip' }}
+#       uses: actions/delete-package-versions@v4
+#       with: 
+#         package-name: ${{ steps.setup.outputs.pkg }}
+#         package-type: 'maven'
+#         package-version-ids: ${{ steps.pkgids.outputs.ids }}
+#         token: ${{ steps.generate_token.outputs.token }}
