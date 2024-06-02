@@ -7,7 +7,7 @@ import java.util.Base64;
 /**
  * 暗号化ユーティリティクラスです。
  */
-public class CryptoUtil {
+public class MyCryptoUtil {
 
     private static final String ALGORITHM = "AES";
     private static final byte[] KEY = "MySuperSecretKey".getBytes();
@@ -20,22 +20,6 @@ public class CryptoUtil {
      * @throws Exception 暗号化中にエラーが発生した場合
      */
     public static String encrypt(String plainText) throws Exception {
-        Cipher cipher = Cipher.getInstance(ALGORITHM);
-        SecretKeySpec secretKey = new SecretKeySpec(KEY, ALGORITHM);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-        byte[] cipherText = cipher.doFinal(plainText.getBytes());
-        return Base64.getEncoder().encodeToString(cipherText);
-    }
-
-    // 上記とは別の手法で暗号化を行うメソッドを追加してください
-    /**
-     * Encrypts the given plain text using a symmetric encryption algorithm.
-     *
-     * @param plainText The plain text to be encrypted.
-     * @return The encrypted text as a Base64-encoded string.
-     * @throws Exception If an error occurs during the encryption process.
-     */
-    public static String encrypt2(String plainText) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         SecretKeySpec secretKey = new SecretKeySpec(KEY, ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
